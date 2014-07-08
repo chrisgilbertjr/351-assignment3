@@ -10,10 +10,13 @@ struct Process
     unsigned int AdmissionTime;
     unsigned int TerminationTime;
     unsigned int MemorySpace;
+    bool Admitted;
 
     Process();
 
     ~Process();
+
+    bool isAdmitted() const;
 };
 
 #endif

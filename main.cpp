@@ -16,7 +16,7 @@ int main()
     PageSize = 100;
 
     /** Initialize the processes info with a file and test if successful */
-    if (memoryManager->InitializeProcessInfo(filename))
+    if (!memoryManager->InitializeProcessInfo(filename, MemorySize, PageSize))
     {
         return 1;
     }

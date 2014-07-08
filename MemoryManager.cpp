@@ -1,4 +1,5 @@
 
+#include <unistd.h>
 #include "MemoryManager.h"
 
 //-----------------------------------------------------------------------------
@@ -13,41 +14,57 @@ MemoryManager::~MemoryManager()
     delete [] Processes;
 }
 //-----------------------------------------------------------------------------
-void MemoryManager::InitializeProcessInfo(const char* filename)
+bool MemoryManager::InitializeProcessInfo(const char*        filename,
+                                          const unsigned int memorySize,
+                                          const unsigned int pageSize)
 {
+    /** open the file */
     FILE* WorkloadFile = fopen(filename, "r");
 
+    /** check if the file opened successfully */
     if (!WorkloadFile)
     {
         fprintf(stderr, "Error opening %s...\n", filename);
 
         NumProcesses = 0;
         Processes = 0;
-        return;
+        return false;
     }
 
+    /** Buffer used for FILE I/O */
     char buffer[64] = {0};
 
+    /** Get the number of processes */
     if (fgets(buffer, 64, WorkloadFile))
     {
         sscanf(buffer, "%u", &NumProcesses);
     }
 
+    /** Initialize the size of managed memory */
+    Size = memorySize;
+
+    /** Dynamically create the array of processes */
     Processes = new Process[NumProcesses];
+
+    /** Dynamically create the array of pages */
+    Pages = new Page[Size/pageSize];
 
     for (int i = 0; i < NumProcesses; ++i)
     {
+        /** Get the process Number */
         if (fgets(buffer, 64, WorkloadFile))
         {
             sscanf(buffer, "%u", &Processes[i].Number);
         }
 
+        /** Get the arrival time and lifetime of the process */
         if (fgets(buffer, 64, WorkloadFile))
         {
             sscanf(buffer, "%u %u", &Processes[i].ArrivalTime,
                                     &Processes[i].LifeTime);
         }
 
+        /** Get the total memory space the process occupies */
         if (fgets(buffer, 64, WorkloadFile))
         {
             char* token;
@@ -65,24 +82,80 @@ void MemoryManager::InitializeProcessInfo(const char* filename)
 
             Processes[i].MemorySpace = accumulate;
         }
+
+        /** Read the blank line between the processes */
         fgets(buffer, 64, WorkloadFile);
     }
+
+    /** Initialize timers */
     gettimeofday(&Start, NULL);
     gettimeofday(&End, NULL);
+
+    return true;
 }
 //-----------------------------------------------------------------------------
 void MemoryManager::Run()
 {
+    long int CurrentMs = GetCurrentMs();
+    bool PrintTime = true;
+
+    while (CurrentMs < MAX_MS)
+    {
+        PrintTime = true;
+        for (int i = 0; i < NumProcesses; ++i)
+        {
+            if (!Processes[i].isAdmitted() &&
+                 Processes[i].ArrivalTime <= CurrentMs)
+            {
+                if (PrintTime)
+                {
+                    printf("t = %4u:", Processes[i].ArrivalTime);
+                }
+
+                PrintProcessArrival(Processes[i].Number, PrintTime);
+                Queue.push_back(&Processes[i]);
+                Processes[i].Admitted = true;
+                PrintTime = false;
+            }
+        }
+        //PrintQueue();
+
+        CurrentMs = GetCurrentMs();
+    }
 }
 //-----------------------------------------------------------------------------
-unsigned long MemoryManager::GetCurrentMs()
+long int MemoryManager::GetCurrentMs()
 {
+    /** update current time */
     gettimeofday(&End, NULL);
 
+    /** convert timers to Ms */
     long int StartMs    = (Start.tv_sec * 1000) + (Start.tv_usec / 1000);
     long int EndMs      = (End.tv_sec * 1000) + (End.tv_usec / 1000);
 
+    /** Return total Ms since initialization */
     return EndMs - StartMs;
+}
+//-----------------------------------------------------------------------------
+void MemoryManager::PrintProcessArrival(const unsigned int processNumber,
+                                        bool time) const
+{
+    if (!time)
+    {
+        printf("         ");
+    }
+
+    printf("  Process %2d arrives\n", processNumber);
+}
+//-----------------------------------------------------------------------------
+void MemoryManager::PrintQueue() const
+{
+    printf("\n\n ");
+    for (int i = 0; i < Queue.size(); ++i)
+    {
+        printf("%u ", Queue[i]->Number);
+    }
+    printf("\n\n");
 }
 //-----------------------------------------------------------------------------
 void MemoryManager::PrintProcesses() const

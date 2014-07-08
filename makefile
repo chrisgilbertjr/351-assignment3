@@ -1,5 +1,5 @@
-main: main.cpp MemoryManager.cpp Process.cpp
-	g++ main.cpp MemoryManager.cpp Process.cpp -o main
+main: main.cpp MemoryManager.cpp Process.cpp Page.cpp
+	g++ main.cpp MemoryManager.cpp Process.cpp Page.cpp -o main
 
 clean:
 	rm -rf main
