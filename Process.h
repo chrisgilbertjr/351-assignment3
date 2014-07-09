@@ -11,12 +11,15 @@ struct Process
     unsigned int TerminationTime;
     unsigned int Size;
     bool Admitted;
+    bool Terminated;
 
     Process();
 
     ~Process();
 
     bool isAdmitted() const;
+
+    bool isTerminated() const;
 };
 
 #endif

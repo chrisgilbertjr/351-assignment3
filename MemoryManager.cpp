@@ -104,21 +104,52 @@ bool MemoryManager::InitializeProcessInfo(const char*        filename,
 //-----------------------------------------------------------------------------
 void MemoryManager::Run()
 {
-    bool     PrintTime = true;
+    bool     PrintTime = true; /** flag for printing time only once */
     long int CurrentMs = GetCurrentMs();
+    unsigned int CurrentTime = 0; /**< The current time frame were in */
 
     while (CurrentMs < MAX_MS)
     {
-        PrintTime = true;
+        CurrentTime = 0; 
+        PrintTime   = true;
+        
+        /** Delete any memory that needs to be deleted */
         for (int i = 0; i < NumProcesses; ++i)
         {
+            if (Processes[i].TerminationTime <= CurrentMs &&
+               !Processes[i].isTerminated() &&
+                Processes[i].isAdmitted())
+            {
+                if (PrintTime)
+                {
+                    CurrentTime = Processes[i].TerminationTime;
+                    printf("t = %4u:", CurrentTime);
+                }
+
+                PrintProcessCompleteion(Processes[i].Number, PrintTime);
+
+                DeleteMemoryBlock(&Processes[i]);
+                
+                PrintMemoryMap();
+
+                Processes[i].Terminated = true;
+                PrintTime = false;
+            }
+        }
+
+        /** Processes are admitted to the process queue when needed here */
+        for (int i = 0; i < NumProcesses; ++i)
+        {
+            /** Admit process to the process queue its arrival time is valid */
             if (!Processes[i].isAdmitted() &&
+                !Processes[i].isTerminated() &&
                  Processes[i].ArrivalTime <= CurrentMs)
             {
                 /** Only print the time once when necessary */
                 if (PrintTime)
                 {
-                    printf("t = %4u:", Processes[i].ArrivalTime);
+                    CurrentTime = Processes[i].ArrivalTime;
+                    printf("t = %4u:", CurrentTime);
                 }
 
                 /** Print that the process arrived */
@@ -133,6 +164,7 @@ void MemoryManager::Run()
 
                 /** The process has been admitted and the time was printed */
                 Processes[i].Admitted = true;
+                Processes[i].TerminationTime = 999999;
                 PrintTime = false;
             }
         }
@@ -140,21 +172,34 @@ void MemoryManager::Run()
         /** Map the memory if there is space available */
         if (Queue.size() > 0)
         {
-            bool blockAvailable = FreeMemoryBlock(Queue[0].Size);
+            bool blockAvailable = CheckForFreeMemoryBlock(Queue[0].Size);
                 
             while(blockAvailable)
             {
-                /** Map the memory */ 
-                MapMemory(&Queue[0]); 
-                Queue.erase(Queue.begin());
-                blockAvailable = false;
+                /** Print that the process is being moved to memory */
+                printf("           MM moves process %2u to memory\n", Queue[0].Number);
 
+                /** Map the memory */ 
+                MapMemoryBlock(&Queue[0]); 
+
+                /** Update the processes Admission and termination times */
+                int pIndex = Queue[0].Number-1;
+                Processes[pIndex].AdmissionTime = CurrentTime;
+                Processes[pIndex].TerminationTime = CurrentTime + Queue[0].LifeTime;
+                //printf("\nTERM: %u\n", Processes[pIndex].TerminationTime);
+
+                /** Delete the process from the queue */
+                Queue.erase(Queue.begin());
+
+                /** Test if other processes need to be memory mapped */
+                blockAvailable = false;
                 if (Queue.size() > 0)
                 {
-                    blockAvailable = FreeMemoryBlock(Queue[0].Size);
+                    blockAvailable = CheckForFreeMemoryBlock(Queue[0].Size);
                 }
 
-                printf("           MM moves process %2u to memory\n", Queue[0].Number);
+                /** Print the updated memory map */
+                PrintQueue();
                 PrintMemoryMap();
             }
         }
@@ -183,9 +228,8 @@ long int MemoryManager::GetCurrentMs()
     return EndMs - StartMs;
 }
 //-----------------------------------------------------------------------------
-bool MemoryManager::FreeMemoryBlock(const unsigned int blockSize) const
+bool MemoryManager::CheckForFreeMemoryBlock(const unsigned int blockSize) const
 {
-    unsigned int MaxAccumulate = 0;
     unsigned int Accumulate = 0;
 
     for (int i = 0; i < NumPages; ++i)
@@ -194,23 +238,9 @@ bool MemoryManager::FreeMemoryBlock(const unsigned int blockSize) const
         {
             Accumulate += Pages[i].Size;
         }
-        else
-        {
-            if (Accumulate >= MaxAccumulate)
-            {
-                MaxAccumulate = Accumulate;
-            }
-
-            Accumulate = 0;
-        }
     }
 
-    if (Accumulate >= MaxAccumulate)
-    {
-        MaxAccumulate = Accumulate;
-    }
-
-    if (MaxAccumulate >= blockSize)
+    if (Accumulate >= blockSize)
     {
         return true;
     }
@@ -218,7 +248,18 @@ bool MemoryManager::FreeMemoryBlock(const unsigned int blockSize) const
     return false;
 }
 //-----------------------------------------------------------------------------
-void MemoryManager::MapMemory(Process* process)
+void MemoryManager::DeleteMemoryBlock(Process* process)
+{
+    for (int i = 0; i < NumPages; ++i)
+    {
+        if (Pages[i].ProcessNumber == process->Number)
+        {
+            Pages[i].Occupied = false;
+        }
+    }
+}
+//-----------------------------------------------------------------------------
+void MemoryManager::MapMemoryBlock(Process* process)
 {
     unsigned int Accumulate = 0;
     unsigned int Index = 0;
@@ -308,6 +349,17 @@ void MemoryManager::PrintProcessArrival(const unsigned int processNumber,
     }
 
     printf("  Process %2d arrives\n", processNumber);
+}
+//-----------------------------------------------------------------------------
+void MemoryManager::PrintProcessCompleteion(const unsigned int processNumber, 
+                                            bool time) const
+{
+    if (!time)
+    {
+        printf("         ");
+    }
+
+    printf("  Process %2u completes\n", processNumber);
 }
 //-----------------------------------------------------------------------------
 void MemoryManager::PrintQueue() const

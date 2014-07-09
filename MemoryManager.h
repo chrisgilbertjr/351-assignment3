@@ -64,9 +64,11 @@ struct MemoryManager
      * @param blockSize The size of the memory block 
      * @return True if there is free memory of size blockSize, otherwise false
      */
-    bool FreeMemoryBlock(const unsigned int blockSize) const;
+    bool CheckForFreeMemoryBlock(const unsigned int blockSize) const;
 
-    void MapMemory(Process* process);
+    void DeleteMemoryBlock(Process* process);
+
+    void MapMemoryBlock(Process* process);
 
     /**
      * Prints the memory map
@@ -74,13 +76,19 @@ struct MemoryManager
     void PrintMemoryMap() const;
 
     /**
-     * Prints out that a process arrived.
-     * Formatting depends on if the time was printed this line as well.
+     * Prints that a process has arrived.
+     * Formatting depends on if the time was printed on this line as well.
      *
      * @param processNumber The process number to print
      * @param time Format flag depending on if time was printed this line
      */
     void PrintProcessArrival(const unsigned int processNumber, bool time) const;
+
+    /**
+     * Prints that a process has completed.
+     * Farmatting depends on if the time was printed on this line as well.
+     */
+    void PrintProcessCompleteion(const unsigned int processNumber, bool time) const;
 
     /**
      * Prints the input queue of processes.
