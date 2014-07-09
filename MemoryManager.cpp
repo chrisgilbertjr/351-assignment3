@@ -262,45 +262,24 @@ void MemoryManager::DeleteMemoryBlock(Process* process)
 void MemoryManager::MapMemoryBlock(Process* process)
 {
     unsigned int Accumulate = 0;
-    unsigned int Index = 0;
-    bool map = false;
+    unsigned int pageNumber = 1;
 
     for (int i = 0; i < NumPages; ++i)
     {
-        if (Pages[i].isOccupied())
+        if (!Pages[i].isOccupied())
         {
-            Accumulate = 0;
-            Index = i+1;
-        }
-        else
-        {
-            Accumulate += Pages[i].Size;
+            Pages[i].ProcessNumber = process->Number;
+            Pages[i].PageNumber = pageNumber;
+            Pages[i].Occupied = true;
+            pageNumber++;
 
+            Accumulate += Pages[i].Size;
+            
             if (Accumulate >= process->Size)
             {
-                map = true;
                 break;
             }
-
         }
-    }
-
-    if (map)
-    {
-        unsigned int pageIndex = 0;
-        unsigned int loops = process->Size/Pages[Index].Size;
-        for (int i = 0; i < loops; ++i)
-        {
-            pageIndex = Index + i;
-
-            Pages[pageIndex].ProcessNumber = process->Number;
-            Pages[pageIndex].PageNumber = i+1;
-            Pages[pageIndex].Occupied = true;
-        }
-    }
-    else
-    {
-        printf("ERROR MAPPING MEMORY!");
     }
 }
 //-----------------------------------------------------------------------------
@@ -308,8 +287,9 @@ void MemoryManager::PrintMemoryMap() const
 {
     unsigned int accumulate = 0;
     unsigned int offset = 0;
+    bool FirstPrint = true;
 
-    printf("           Memory Map:\n");
+    printf("           Memory Map:");
     for (int i = 0; i < NumPages; ++i)
     {
         if (!Pages[i].isOccupied())
@@ -320,11 +300,29 @@ void MemoryManager::PrintMemoryMap() const
         {
             if (accumulate > 0)
             {
-                printf("                %4u - %4u:", offset, offset+accumulate-1);
+                if (FirstPrint)
+                {
+                    printf(" %4u - %4u:", offset, offset+accumulate-1);
+                    FirstPrint = false;
+                }
+                else
+                {
+                    printf("                       %4u - %4u:", offset, offset+accumulate-1);
+                }
                 printf(" Free frame(s)\n");
+
+                offset = i * Pages[i].Size;
             }
 
-            printf("                %4u - %4u:", offset, offset+Pages[i].Size-1);
+            if (FirstPrint)
+            {
+                printf(" %4u - %4u:", offset, offset+Pages[i].Size-1);
+                FirstPrint = false;
+            }
+            else
+            {
+                printf("                       %4u - %4u:", offset, offset+Pages[i].Size-1);
+            }
             printf(" Process %2u, Page %2u\n", Pages[i].ProcessNumber,
                                                Pages[i].PageNumber);
 
@@ -335,7 +333,14 @@ void MemoryManager::PrintMemoryMap() const
 
     if (accumulate > 0)
     {
-        printf("                %4u - %4u:", offset, offset+accumulate-1);
+        if (FirstPrint)
+        {
+            printf(" %4u - %4u:", offset, offset+accumulate-1);
+        }
+        else
+        {
+            printf("                       %4u - %4u:", offset, offset+accumulate-1);
+        }
         printf(" Free frame(s)\n");
     }
 }

@@ -13,7 +13,7 @@ int main()
     // mem init here
     const char* filename = "in1.txt";
     MemorySize = 2000;
-    PageSize = 100;
+    PageSize = 200;
 
     /** Initialize the processes info with a file and test if successful */
     if (!memoryManager->InitializeProcessInfo(filename, MemorySize, PageSize))
