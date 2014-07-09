@@ -250,7 +250,7 @@ void MemoryManager::Run()
 
     if (complete)
     {
-        printf("All processes completed!\n");
+        printf("All processes completed!\n\n");
     }
     else
     {

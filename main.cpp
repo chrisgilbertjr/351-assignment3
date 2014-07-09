@@ -1,5 +1,5 @@
 /**
- * CS 351 OPERATING SYSTEMS
+ * CS 351 OPERATING SYSTEMS - Section 1
  * 07/08/2014
  *
  * Group DBZ
