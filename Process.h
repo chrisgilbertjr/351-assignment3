@@ -2,6 +2,7 @@
 #ifndef _PROCESS_H_
 #define _PROCESS_H_
 
+/** Holds the process information */
 struct Process
 {
     unsigned int Number;
@@ -17,8 +18,14 @@ struct Process
 
     ~Process();
 
+    /**
+     * Getter for Admitted
+     */
     bool isAdmitted() const;
 
+    /**
+     * Getter for Terminated
+     */
     bool isTerminated() const;
 };
 

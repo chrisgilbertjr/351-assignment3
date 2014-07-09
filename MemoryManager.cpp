@@ -1,6 +1,7 @@
 
 #include <unistd.h>
 #include "MemoryManager.h"
+#include <iostream>
 
 //-----------------------------------------------------------------------------
 MemoryManager::MemoryManager()
@@ -108,6 +109,13 @@ void MemoryManager::Run()
     long int CurrentMs = GetCurrentMs();
     unsigned int CurrentTime = 0; /**< The current time frame were in */
     unsigned int LastTime = 0;
+    bool complete = false;
+    bool terminated[NumProcesses];
+
+    for (int i = 0; i < NumProcesses; ++i)
+    {
+        terminated[i] = false;
+    }
 
     while (CurrentMs < MAX_MS)
     {
@@ -135,6 +143,7 @@ void MemoryManager::Run()
                 PrintMemoryMap();
 
                 Processes[i].Terminated = true;
+                terminated[i] = true;
                 PrintTime = false;
             }
         }
@@ -209,8 +218,43 @@ void MemoryManager::Run()
             printf("\n");
         }
 
+        for (int i = 0; i < NumProcesses; ++i)
+        {
+            if (Processes[i].Terminated == false)
+            {
+                complete = false;
+            }
+        }
+
+        if (complete)
+        {
+            break;
+        }
+
         /** Update the time */
         CurrentMs = GetCurrentMs();
+        complete = true;
+    }
+
+    float Total = 0.0f;
+    float Turnaround = 0.0f;
+    /** Calculate the turnaround time */
+    for (int i = 0; i < NumProcesses; ++i)
+    {
+        Total += (float)(Processes[i].TerminationTime - Processes[i].ArrivalTime);
+    }
+
+    Turnaround = Total / (float)NumProcesses;
+
+    printf("Turnaround Time: %0.2f (%0.1f/%u)\n\n", Turnaround, Total, NumProcesses);
+
+    if (complete)
+    {
+        printf("All processes completed!\n");
+    }
+    else
+    {
+        printf("Timeout... 10000ms reached. Terminating...\n\n");
     }
 }
 //-----------------------------------------------------------------------------

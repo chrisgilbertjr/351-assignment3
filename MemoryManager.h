@@ -13,6 +13,7 @@
 /* Max running time */
 #define MAX_MS 10000
 
+/** Memory management simulator */
 struct MemoryManager
 {
     std::vector<Process> Queue;         /**< FCFS Process queue */
@@ -66,8 +67,18 @@ struct MemoryManager
      */
     bool CheckForFreeMemoryBlock(const unsigned int blockSize) const;
 
+    /**
+     * Deletes a process from memory.
+     * 
+     * @param process The process to delete
+     */
     void DeleteMemoryBlock(Process* process);
 
+    /**
+     * Maps a process to memory
+     *
+     * @param process The process to map
+     */
     void MapMemoryBlock(Process* process);
 
     /**
