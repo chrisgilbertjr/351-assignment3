@@ -9,7 +9,7 @@ struct Process
     unsigned int LifeTime;
     unsigned int AdmissionTime;
     unsigned int TerminationTime;
-    unsigned int MemorySpace;
+    unsigned int Size;
     bool Admitted;
 
     Process();
