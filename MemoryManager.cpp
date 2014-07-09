@@ -107,6 +107,7 @@ void MemoryManager::Run()
     bool     PrintTime = true; /** flag for printing time only once */
     long int CurrentMs = GetCurrentMs();
     unsigned int CurrentTime = 0; /**< The current time frame were in */
+    unsigned int LastTime = 0;
 
     while (CurrentMs < MAX_MS)
     {
@@ -123,6 +124,7 @@ void MemoryManager::Run()
                 if (PrintTime)
                 {
                     CurrentTime = Processes[i].TerminationTime;
+                    LastTime = CurrentTime;
                     printf("t = %4u:", CurrentTime);
                 }
 
@@ -149,6 +151,7 @@ void MemoryManager::Run()
                 if (PrintTime)
                 {
                     CurrentTime = Processes[i].ArrivalTime;
+                    LastTime = CurrentTime;
                     printf("t = %4u:", CurrentTime);
                 }
 
@@ -172,35 +175,31 @@ void MemoryManager::Run()
         /** Map the memory if there is space available */
         if (Queue.size() > 0)
         {
-            bool blockAvailable = CheckForFreeMemoryBlock(Queue[0].Size);
                 
-            while(blockAvailable)
+            for (int i = 0; i < Queue.size(); ++i)
             {
-                /** Print that the process is being moved to memory */
-                printf("           MM moves process %2u to memory\n", Queue[0].Number);
+                bool blockAvailable = CheckForFreeMemoryBlock(Queue[i].Size);
 
-                /** Map the memory */ 
-                MapMemoryBlock(&Queue[0]); 
-
-                /** Update the processes Admission and termination times */
-                int pIndex = Queue[0].Number-1;
-                Processes[pIndex].AdmissionTime = CurrentTime;
-                Processes[pIndex].TerminationTime = CurrentTime + Queue[0].LifeTime;
-                //printf("\nTERM: %u\n", Processes[pIndex].TerminationTime);
-
-                /** Delete the process from the queue */
-                Queue.erase(Queue.begin());
-
-                /** Test if other processes need to be memory mapped */
-                blockAvailable = false;
-                if (Queue.size() > 0)
+                if (blockAvailable)
                 {
-                    blockAvailable = CheckForFreeMemoryBlock(Queue[0].Size);
-                }
+                    /** Print that the process is being moved to memory */
+                    printf("           MM moves process %2u to memory\n", Queue[i].Number);
 
-                /** Print the updated memory map */
-                PrintQueue();
-                PrintMemoryMap();
+                    /** Map the memory */ 
+                    MapMemoryBlock(&Queue[i]); 
+
+                    /** Update the processes Admission and termination times */
+                    int pIndex = Queue[i].Number-1;
+                    Processes[pIndex].AdmissionTime = LastTime;
+                    Processes[pIndex].TerminationTime = LastTime + Queue[i].LifeTime;
+
+                    /** Delete the process from the queue */
+                    Queue.erase(Queue.begin()+i);
+
+                    /** Print the updated memory map */
+                    PrintQueue();
+                    PrintMemoryMap();
+                }
             }
         }
 
